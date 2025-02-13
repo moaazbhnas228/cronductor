@@ -16,5 +16,8 @@
     "strictNullChecks": false
   },
   "compileOnSave": true,
-  "include": ["src"]
+  "include": [
+    "src",
+    "trigger.config.ts"
+  ]
 }
