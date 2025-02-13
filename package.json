@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "start": "node dist/src/index.js"
+    "start": "node dist/src/index.js",
+    "deploy:trigger-prod": "npx trigger.dev@3.0.0 deploy",
+    "deploy:trigger": "npx trigger.dev@3.0.0 deploy --env staging"
   },
   "dependencies": {
     "@trigger.dev/sdk": "^3.3.15",
