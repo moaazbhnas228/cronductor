@@ -24,4 +24,4 @@ jobs:
         env:
           TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
         run: |
-          npm run deploy:trigger
+          npm run deploy:trigger-prod
