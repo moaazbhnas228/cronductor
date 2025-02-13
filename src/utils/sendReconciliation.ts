@@ -217,7 +217,7 @@ export default async function sendReconciliationSingleGateway(
     }).email.send(
       new EmailParams()
         .setFrom(new Sender(from))
-        .setTo(recipients)
+        .setTo([new Recipient('moaaz.bhnas@orchestrapay.com')])
         .setBcc(bcc)
         .setAttachments(attachments)
         .setSubject(

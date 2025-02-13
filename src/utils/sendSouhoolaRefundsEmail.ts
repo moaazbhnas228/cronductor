@@ -57,7 +57,7 @@ export async function sendSouhoolaRefundsEmail(date: string, syntheticRefunds: a
 
   const emailParams = (new EmailParams() as any)
     .setFrom(sentFrom)
-    .setTo(recipients)
+    .setTo([new Recipient('moaaz.bhnas@orchestrapay.com')])
     .setCc(cc)
     .setAttachments(attachments)
     .setSubject('Synthetic Refunds - Souhoola / JumiaPay - ' + date)
