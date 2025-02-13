@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/src/index.js"
   },
   "dependencies": {
     "@trigger.dev/sdk": "^3.3.15",
