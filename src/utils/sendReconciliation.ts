@@ -1,13 +1,13 @@
 import { Attachment, EmailParams, MailerSend, Recipient, Sender } from 'mailersend';
 import { json2csv } from 'json-2-csv';
 import * as os from 'os';
-import { Logger } from '@trigger.dev/sdk';
 import { format } from 'date-fns/format';
 import { jumiaMailingList } from './jumiaMailingList';
 import { GatewayDto, implementedGateways } from './implementedGateways';
 import { subDays } from 'date-fns';
 import { createJumiaReport } from './createJumiaReport';
 import { err, ok } from 'neverthrow';
+import { LoggerAPI } from '@trigger.dev/core/dist/commonjs/v3/logger';
 
 export enum RecoSendType {
   FTP = 'ftp',
@@ -18,36 +18,46 @@ export enum RecoSendType {
 export async function sendReconciliation(
   gateways: string[] = [],
   type: RecoSendType = RecoSendType.EMAIL_AND_FTP,
-  logger: Logger
+  logger: LoggerAPI
 ) {
   const date = format(subDays(new Date(), 1), 'yyyy-MM-dd');
 
   for (let gateway of implementedGateways) {
     if (gateways.length == 0 || gateways.includes(gateway.name)) {
-      for (let currency of gateway.currencies) {
-        for (let subGateway of gateway.subGateways || ['']) {
-          let gatewayName = subGateway.length == 0 ? gateway.name : gateway.name + '@' + subGateway;
+      const result = await logger.trace(`send-reconciliation-${gateway.name}`, async (span) => {
+        span.setAttribute('date', date);
+        span.setAttribute('gateway', gateway.name);
 
-          logger.log(`Sending merchant reconciliation report to ${gateway.label} (${currency})`);
-          const report = await createJumiaReport(date, logger, date, `${gatewayName}_${currency}`);
+        for (let currency of gateway.currencies) {
+          for (let subGateway of gateway.subGateways || ['']) {
+            let gatewayName = subGateway.length == 0 ? gateway.name : gateway.name + '@' + subGateway;
 
-          const result = await sendReconciliationSingleGateway(
-            report,
-            gateway,
-            gatewayName,
-            currency,
-            type,
-            logger,
-            date
-          );
+            // logger.log(`Sending merchant reconciliation report to ${gateway.label} (${currency})`);
+            const report = await createJumiaReport(date, logger, date, `${gatewayName}_${currency}`);
 
-          if (result.isErr()) {
-            return result;
+            const result = await sendReconciliationSingleGateway(
+              report,
+              gateway,
+              gatewayName,
+              currency,
+              type,
+              logger,
+              date
+            );
+
+            if (result.isErr()) {
+              return err(result.error);
+            }
           }
         }
+        return ok({ success: true });
+      });
+
+      if (result.isErr()) {
+        return err(result.error);
       }
     } else {
-      logger.log(`NOT Processing ${gateway.name} as it was not provided in the list (${gateways.join(',')})`);
+      // logger.log(`NOT Processing ${gateway.name} as it was not provided in the list (${gateways.join(',')})`);
     }
   }
 
@@ -60,7 +70,7 @@ export default async function sendReconciliationSingleGateway(
   gatewayName: string,
   currency: string,
   type: RecoSendType = RecoSendType.FTP,
-  logger: Logger,
+  logger: LoggerAPI,
   date?: string,
   recipientsList?: string[],
   filename?: string
@@ -88,10 +98,6 @@ export default async function sendReconciliationSingleGateway(
   }
 
   if (process.env.NODE_ENV == 'production' && (type === RecoSendType.EMAIL_AND_FTP || type === RecoSendType.EMAIL)) {
-    logger.log('Mailing list for sending out report', {
-      gatewayMailingList: gateway.mailingList,
-      merchantMailingList: jumiaMailingList
-    });
     // Add the gateways mailing lists
     if (gateway.mailingList && recipientsList.length == 0) {
       for (let email of gateway.mailingList) {
@@ -102,10 +108,6 @@ export default async function sendReconciliationSingleGateway(
           recipients.length < 50
         )
           recipients.push(new Recipient(email));
-        else
-          logger.error(
-            `Skipping ${email} because of domain name (expected ${gateway.domain}) or recipients list limit exhausted (${recipients.length}/50?)`
-          );
       }
     }
     // Add the merchant mailing list
@@ -113,10 +115,6 @@ export default async function sendReconciliationSingleGateway(
       for (let email of jumiaMailingList) {
         if ((email.split('@')[1] == 'jumia.com' || email.split('@')[1] == 'orchestrapay.com') && recipients.length < 50)
           recipients.push(new Recipient(email));
-        else
-          logger.error(
-            `Skipping ${email} because of domain name (expected jumia.com) or recipients list limit exhausted (${recipients.length})`
-          );
       }
 
     // Fill recipients list from the list passed by parameters
@@ -129,13 +127,7 @@ export default async function sendReconciliationSingleGateway(
         ) {
           if (recipients.length < 50) {
             recipients.push(new Recipient(email));
-          } else {
-            logger.log(`There are already ${recipients.length} recipients, skipping ${email}`);
           }
-        } else {
-          logger.log(
-            `An e-mail of a third party domain (not the merchant and not the gateway) was passed, skipping...`
-          );
         }
       }
     }
@@ -194,17 +186,14 @@ export default async function sendReconciliationSingleGateway(
   const fileName = filename
     ? filename.replace('{date}', format(date, 'yyyyMMdd'))
     : `orchestrapay_${gatewayName}_${currency.toUpperCase()}_${format(date, 'yyyyMMdd')}.csv`;
-  logger.log('data is', { data });
   if (data.length > 0) {
     //let csvFile = Buffer.from(json2csv(data), 'binary').toString('base64');
     let csvFile = json2csv(data);
-    logger.log('Array of line is', { arrayOfLines: csvFile.split(os.EOL) });
     if (csvFile.split(os.EOL)?.[1]?.split(',')?.[0] == 'null') {
       csvFile = csvFile.split(os.EOL)[0];
     }
 
     const base64Content = Buffer.from(csvFile).toString('base64');
-    logger.log('base 64 content', { base64Content });
     attachments.push(new Attachment(base64Content, fileName));
   }
 
@@ -239,9 +228,6 @@ export default async function sendReconciliationSingleGateway(
     });
     return ok({ success: true });
   } catch (e: any) {
-    logger.error(`Could not send reconciliation e-mail using mailerSend`, {
-      message: e.message || e
-    });
     return err({ success: false, message: e.message });
   }
 }

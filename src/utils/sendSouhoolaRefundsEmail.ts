@@ -74,11 +74,6 @@ export async function sendSouhoolaRefundsEmail(date: string, syntheticRefunds: a
 
     return ok({ success: true });
   } catch (e: any) {
-    logger.error(`Could not send Souhoola Virtual Refunds e-mail`, {
-      message: e.message,
-      error: e
-    });
-
     return err({ message: e.message, success: false });
   }
 }

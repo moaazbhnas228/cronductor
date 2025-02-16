@@ -1,6 +1,7 @@
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { MySQL2Instrumentation } from '@opentelemetry/instrumentation-mysql2';
 import { defineConfig } from '@trigger.dev/sdk/v3';
+import { omit } from 'lodash';
 
 export default defineConfig({
   project: 'proj_yknljgobncekcfhrckkd',
@@ -21,7 +22,22 @@ export default defineConfig({
     }
   },
   telemetry: {
-    instrumentations: [new HttpInstrumentation(), new MySQL2Instrumentation()]
+    instrumentations: [
+      new HttpInstrumentation({
+        responseHook(span, response: any) {
+          const host = response.req.host || '';
+          const path = response.req.path || '';
+          const method = response.req.method || '';
+          const message = `[${response.statusCode}] ${method} | ${host}${path}`;
+          span.updateName(message);
+        }
+      }),
+      new MySQL2Instrumentation({
+        responseHook(span, response) {
+          span.updateName(`[SQL] | ${response.queryResults.length} results`);
+        }
+      })
+    ]
   },
   dirs: ['./src/trigger']
 });

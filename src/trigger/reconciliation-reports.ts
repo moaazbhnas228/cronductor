@@ -8,13 +8,7 @@ export const reconciliationReports = schedules.task({
   // Set an optional maxDuration to prevent tasks from running indefinitely
   maxDuration: 300, // Stop executing after 300 secs (5 mins) of compute
   run: async (payload, { ctx }) => {
-    logger.log('🔵 Its 2AM, time to send Jumia reconciliation report');
-
-    const result = await logger.trace('reconciliation-reports', async (span) => {
-      span.setAttribute('type', 'email');
-
-      return await sendReconciliation([], RecoSendType.EMAIL, logger as any);
-    });
+    const result = await sendReconciliation([], RecoSendType.EMAIL, logger as any);
 
     if (result.isErr()) {
       logger.info(`🔴 Failed to send reconciliation reports`, {

@@ -1,6 +1,7 @@
 import { logger, schedules } from '@trigger.dev/sdk/v3';
 import { format } from 'date-fns';
 import { getHistoricalSuccessfulAverageForTimeRange, getSuccessfulTransactionsFromTo } from '../db/sdk';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const HISTORICAL_DAYS = 30;
 const HISTORICAL_AVERAGE_THRESHOLD = 5;
@@ -12,28 +13,15 @@ export const successfulTransactions = schedules.task({
   // Set an optional maxDuration to prevent tasks from running indefinitely
   maxDuration: 300, // Stop executing after 300 secs (5 mins) of compute
   run: async (payload, { ctx }) => {
-    const to = format(payload.timestamp, 'yyyy-MM-dd HH:mm:ss'); // current timestamp from payload
-    const from = format(payload.lastTimestamp, 'yyyy-MM-dd HH:mm:ss'); // 5 minutes ago
+    const to = formatInTimeZone(payload.timestamp, 'UTC', 'yyyy-MM-dd HH:mm:ss'); // current timestamp from payload
+    const from = formatInTimeZone(payload.lastTimestamp, 'UTC', 'yyyy-MM-dd HH:mm:ss'); // 5 minutes ago
 
     logger.info(`🔵 Getting successful transactions from ${from} to ${to}`, {
       from,
       to
     });
 
-    const transactionsResult = await logger.trace('successful-transactions', async (span) => {
-      span.setAttribute('from', from);
-      span.setAttribute('to', to);
-
-      return await getSuccessfulTransactionsFromTo(from, to);
-    });
-
-    const historicalAverage = await logger.trace('historical-average', async (span) => {
-      span.setAttribute('from', from);
-      span.setAttribute('to', to);
-      span.setAttribute('days', HISTORICAL_DAYS);
-
-      return await getHistoricalSuccessfulAverageForTimeRange(from, to, HISTORICAL_DAYS);
-    });
+    const transactionsResult = await getSuccessfulTransactionsFromTo(from, to);
 
     if (transactionsResult.isErr()) {
       logger.error(`🔴 Error getting successful transactions.`, {
@@ -44,7 +32,18 @@ export const successfulTransactions = schedules.task({
       throw new Error(transactionsResult.error.message);
     }
 
-    if (historicalAverage.isOk() && historicalAverage.value <= HISTORICAL_AVERAGE_THRESHOLD) {
+    const historicalAverage = await getHistoricalSuccessfulAverageForTimeRange(from, to, HISTORICAL_DAYS);
+
+    if (historicalAverage.isErr()) {
+      logger.error(`🔴 Error getting historical average.`, {
+        error: historicalAverage.error,
+        from,
+        to
+      });
+      throw new Error(historicalAverage.error.message);
+    }
+
+    if (historicalAverage.value <= HISTORICAL_AVERAGE_THRESHOLD) {
       logger.info(
         `🟢 Skipping alert: Historical average ${historicalAverage.value} is lower than ${HISTORICAL_AVERAGE_THRESHOLD}.`,
         {
@@ -64,7 +63,7 @@ export const successfulTransactions = schedules.task({
       throw new Error(`No successful transactions found.`);
     }
 
-    logger.info(`🟢 Successfully got ${transactionsResult.value.length} successful transactions.`, {
+    logger.info(`🟢 Got ${transactionsResult.value.length} successful transactions.`, {
       transactions: transactionsResult.value,
       from,
       to

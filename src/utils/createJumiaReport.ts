@@ -1,9 +1,9 @@
-import { Logger } from '@trigger.dev/sdk';
 import moment from 'moment';
 import { query } from '../db/sdk';
 import { getGateway } from './implementedGateways';
 import _ from 'lodash';
 import { isSynthetic } from './syntheticRefundsVendorsCode';
+import { LoggerAPI } from '@trigger.dev/core/dist/commonjs/v3/logger';
 
 function getCountryFromCurrency(currency: string) {
   switch (currency) {
@@ -35,7 +35,7 @@ function getGatewayName(gateway_id: string) {
   return gateway_id;
 }
 
-export async function createJumiaReport(from: string, logger: Logger, to?: string, cashflow_source?: string) {
+export async function createJumiaReport(from: string, logger: LoggerAPI, to?: string, cashflow_source?: string) {
   if (!from) from = moment().format('YYYY-MM-DD');
   else from = moment(from).format('YYYY-MM-DD');
 
@@ -57,15 +57,12 @@ export async function createJumiaReport(from: string, logger: Logger, to?: strin
     cashflow_source = `${gateway}_${currency}`;
   }
 
-  logger.log(`Creating Jumia Report for ${cashflow_source} from ${from} to ${to}`);
-
   let transactions;
   const sql = `SELECT * FROM transactions WHERE created_at > '${from}' AND created_at < '${moment(to || from)
     .add(1, 'day')
     .format(
       'YYYY-MM-DD'
     )}' and status = 'success' and currency = '${currency}' and gateway = '${gateway}' order by id asc`;
-  logger.log(sql);
   transactions = await query(sql);
   let netAmountDue = 0;
 

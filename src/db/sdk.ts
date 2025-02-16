@@ -1,6 +1,7 @@
 import { err, ok } from 'neverthrow';
 import pool from './db';
 import { sqlError } from '../utils/sqlError';
+import { getHours, getMinutes } from 'date-fns';
 
 type AsyncFunction<Params extends any[], ReturnType> = (...params: Params) => Promise<ReturnType>;
 
@@ -26,16 +27,19 @@ export const getSuccessfulTransactionsFromTo = queryWrapper(async (from: string,
 });
 
 export const getHistoricalSuccessfulAverageForTimeRange = queryWrapper(async (from: string, to: string, days = 30) => {
-  const [fromHour, fromMinute] = from.split(' ')[1].split(':');
-  const [toMinute] = to.split(' ')[1].split(':'); // We only need the minute
+  const fromHour = getHours(from);
+  const fromMinute = getMinutes(from);
+  const toMinute = getMinutes(to);
 
-  const query = `SELECT COUNT(id) / COUNT(DISTINCT DATE(created_at)) AS average_transactions
-    FROM transactions
-    WHERE HOUR(created_at) = ${fromHour}
-    AND MINUTE(created_at) BETWEEN ${fromMinute} AND ${toMinute}
-    AND status = 'success'
-    AND created_at >= DATE_SUB('${from}', INTERVAL ${days} DAY)
-    AND created_at < '${from}'`;
+  const query = `
+  SELECT COUNT(id) / COUNT(DISTINCT DATE(created_at)) AS average_transactions
+  FROM transactions
+  WHERE HOUR(created_at) = ${fromHour}
+  AND MINUTE(created_at) BETWEEN ${fromMinute} AND ${toMinute}
+  AND status = 'success'
+  AND created_at >= DATE_SUB('${from}', INTERVAL ${days} DAY)
+  AND created_at < '${from}'
+  `;
 
   const [rows] = await pool.query(query);
   return rows[0]?.average_transactions || 0;
