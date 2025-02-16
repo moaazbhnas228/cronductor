@@ -10,7 +10,11 @@ export const reconciliationReports = schedules.task({
   run: async (payload, { ctx }) => {
     logger.log('🔵 Its 2AM, time to send Jumia reconciliation report');
 
-    const result = await sendReconciliation([], RecoSendType.EMAIL_AND_FTP, logger as any);
+    const result = await logger.trace('reconciliation-reports', async (span) => {
+      span.setAttribute('type', 'email');
+
+      return await sendReconciliation([], RecoSendType.EMAIL, logger as any);
+    });
 
     if (result.isErr()) {
       logger.info(`🔴 Failed to send reconciliation reports`, {

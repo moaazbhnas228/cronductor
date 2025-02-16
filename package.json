@@ -8,10 +8,14 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "start": "node dist/src/index.js",
+    "trigger": "npx trigger.dev@3.3.15 dev",
     "deploy:trigger-prod": "npx trigger.dev@3.3.15 deploy",
     "deploy:trigger": "npx trigger.dev@3.3.15 deploy --env staging"
   },
   "dependencies": {
+    "@opentelemetry/instrumentation-http": "^0.57.2",
+    "@opentelemetry/instrumentation-mysql2": "^0.45.1",
+    "@opentelemetry/instrumentation-undici": "^0.10.0",
     "@trigger.dev/sdk": "3.3.15",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",

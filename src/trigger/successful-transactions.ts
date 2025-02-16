@@ -17,10 +17,15 @@ export const successfulTransactions = schedules.task({
       to
     });
 
-    const transactionsResult = await getSuccessfulTransactionsFromTo(from, to);
+    const transactionsResult = await logger.trace('successful-transactions', async (span) => {
+      span.setAttribute('from', from);
+      span.setAttribute('to', to);
+
+      return await getSuccessfulTransactionsFromTo(from, to);
+    });
 
     if (transactionsResult.isErr()) {
-      logger.error(`🔴 Error getting successful transactions from ${from} to ${to}`, {
+      logger.error(`🔴 Error getting successful transactions.`, {
         error: transactionsResult.error,
         from,
         to
@@ -29,16 +34,17 @@ export const successfulTransactions = schedules.task({
     }
 
     if (transactionsResult.value.length === 0) {
-      logger.info(`🔴 No successful transactions found from ${from} to ${to}`, {
+      logger.info(`🔴 No successful transactions found.`, {
         from,
         to
       });
-      throw new Error(`🔴 No successful transactions found from ${from} to ${to}`);
+      throw new Error(`No successful transactions found.`);
     }
 
-    logger.info(
-      `🟢 Successfully got ${transactionsResult.value.length} successful transactions from ${from} to ${to}`,
-      { transactions: transactionsResult.value }
-    );
+    logger.info(`🟢 Successfully got ${transactionsResult.value.length} successful transactions.`, {
+      transactions: transactionsResult.value,
+      from,
+      to
+    });
   }
 });

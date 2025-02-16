@@ -1,9 +1,11 @@
-import { defineConfig } from "@trigger.dev/sdk/v3";
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { MySQL2Instrumentation } from '@opentelemetry/instrumentation-mysql2';
+import { defineConfig } from '@trigger.dev/sdk/v3';
 
 export default defineConfig({
-  project: "proj_yknljgobncekcfhrckkd",
-  runtime: "node",
-  logLevel: "log",
+  project: 'proj_yknljgobncekcfhrckkd',
+  runtime: 'node',
+  logLevel: 'log',
   // The max compute seconds a task is allowed to run. If the task run exceeds this duration, it will be stopped.
   // You can override this on an individual task.
   // See https://trigger.dev/docs/runs/max-duration
@@ -15,8 +17,11 @@ export default defineConfig({
       minTimeoutInMs: 1000,
       maxTimeoutInMs: 10000,
       factor: 2,
-      randomize: true,
-    },
+      randomize: true
+    }
   },
-  dirs: ["./src/trigger"],
+  telemetry: {
+    instrumentations: [new HttpInstrumentation(), new MySQL2Instrumentation()]
+  },
+  dirs: ['./src/trigger']
 });

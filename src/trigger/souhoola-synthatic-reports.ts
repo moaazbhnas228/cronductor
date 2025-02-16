@@ -5,7 +5,7 @@ import { getSouhoolaSyntheticRefunds } from '../utils/getSouhoolaSyntheticRefund
 
 export const souhoolaSyntheticReports = schedules.task({
   id: 'souhoola-synthetic-reports',
-  // Every day at 2:00 AM.
+  // Every day at 5:00 AM.
   cron: '0 5 * * *',
   // Set an optional maxDuration to prevent tasks from running indefinitely
   maxDuration: 300, // Stop executing after 300 secs (5 mins) of compute
@@ -18,11 +18,11 @@ export const souhoolaSyntheticReports = schedules.task({
     }
 
     const date = moment().subtract(1, 'day').format('YYYY-MM-DD');
-    const result = await sendSouhoolaRefundsEmail(
-      date,
-      await getSouhoolaSyntheticRefunds(1, date, 'json'),
-      logger as any
-    );
+    const result = await logger.trace('souhoola-synthetic-reports', async (span) => {
+      span.setAttribute('date', date);
+
+      return await sendSouhoolaRefundsEmail(date, await getSouhoolaSyntheticRefunds(1, date, 'json'), logger as any);
+    });
 
     if (result.isErr()) {
       logger.info(`🔴 Failed to send Souhoola synthetic reports`, {
