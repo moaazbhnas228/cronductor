@@ -61,8 +61,8 @@ export async function sendSpotitRefundsEmail(date: string, syntheticRefunds: any
     .setCc(cc)
     .setAttachments(attachments)
     .setSubject('Synthetic Refunds - Spotit / JumiaPay - ' + date)
-    .setTemplateId('o65qngk0y7w4wr12');
-  // .setVariables(variables);
+    .setTemplateId('o65qngk0y7w4wr12')
+    .setVariables(variables);
 
   try {
     const c = await mailerSend.email.send(emailParams);

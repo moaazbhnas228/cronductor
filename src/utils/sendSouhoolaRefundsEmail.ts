@@ -61,8 +61,8 @@ export async function sendSouhoolaRefundsEmail(date: string, syntheticRefunds: a
     .setCc(cc)
     .setAttachments(attachments)
     .setSubject('Synthetic Refunds - Souhoola / JumiaPay - ' + date)
-    .setTemplateId('o65qngk0y7w4wr12');
-  // .setVariables(variables);
+    .setTemplateId('o65qngk0y7w4wr12')
+    .setVariables(variables);
 
   try {
     const result = await mailerSend.email.send(emailParams);

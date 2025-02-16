@@ -226,7 +226,7 @@ export default async function sendReconciliationSingleGateway(
           }`
         )
         .setTemplateId('v69oxl5zdp2l785k')
-      // .setVariables(variables)
+        .setVariables(variables)
     );
     logger.log(`Successfully sent reconciliation report.`, {
       variables,
