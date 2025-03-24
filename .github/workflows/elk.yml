@@ -16,7 +16,7 @@ jobs:
       - name: Copy docker-compose and Logstash files to server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_USER: ubuntu # Change if needed
+          SERVER_USER: ubuntu
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
           echo "$SSH_PRIVATE_KEY" > private_key && chmod 600 private_key
