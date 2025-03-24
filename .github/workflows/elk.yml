@@ -17,7 +17,7 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_USER: ubuntu # Change if needed
-          SERVER_IP: your.server.ip
+          SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
           echo "$SSH_PRIVATE_KEY" > private_key && chmod 600 private_key
           scp -i private_key -o StrictHostKeyChecking=no -r docker-compose.yml logstash $SERVER_USER@$SERVER_IP:/home/ubuntu/moaaz/elk
@@ -27,7 +27,7 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_USER: ubuntu
-          SERVER_IP: your.server.ip
+          SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
           echo "$SSH_PRIVATE_KEY" > private_key && chmod 600 private_key
           ssh -i private_key -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << 'EOF'
