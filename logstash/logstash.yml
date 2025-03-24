@@ -1,0 +1,13 @@
+---
+## Default Logstash configuration from Logstash base image.
+## More details: https://github.com/elastic/logstash/blob/master/docker/data/logstash/config/logstash-full.yml
+
+# ===================== HTTP Server Settings =====================
+http.host: "0.0.0.0"
+# This allows Logstash to listen on all available network interfaces.
+# Useful when running in Docker so it can receive logs from external sources.
+
+# ===================== Elasticsearch Monitoring =====================
+xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+# Enables Logstash to send monitoring data to Elasticsearch.
+# Helps track Logstash performance in Kibana under "Stack Monitoring."

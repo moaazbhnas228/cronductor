@@ -1,0 +1,68 @@
+version: '3' # Specifies the Docker Compose file format version
+
+services:
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    ports:
+      - '8080:8080' # Change the port if needed
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Allows Dozzle to access Docker logs
+
+  # ======================= Elasticsearch =======================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch-1.0
+    environment:
+      - discovery.type=single-node # Runs Elasticsearch in a single-node mode (no clustering)
+      - xpack.security.enabled=false # Disables authentication/security (useful for development)
+    ports:
+      - '9200:9200' # Exposes Elasticsearch API on port 9200 (http://localhost:9200)
+    networks:
+      - elk # Connects to the custom 'elk' network
+
+  # ======================= Logstash =======================
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: logstash-1.0
+    volumes:
+      - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf # Mounts Logstash pipeline config
+      - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml # Mounts Logstash settings file
+    ports:
+      - '5000:5000' # Exposes Logstash on port 5000 (used for incoming logs)
+      - '5001:5001' # Exposes an additional port for Logstash input
+    depends_on:
+      - elasticsearch # Ensures Logstash starts after Elasticsearch is up
+    networks:
+      - elk # Connects to the custom 'elk' network
+
+  # ======================= Kibana =======================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana-1.0
+    ports:
+      - '5601:5601' # Exposes Kibana on port 5601 (http://localhost:5601)
+    networks:
+      - elk # Connects to the custom 'elk' network
+
+  # ======================= Filebeat =======================
+  # filebeat:
+  #   build:
+  #     context: filebeat/ # Builds the Filebeat image from the 'filebeat/' directory (Dockerfile required)
+  #   container_name: filebeat-1.0
+  #   command: filebeat -e -strict.perms=false # Disables strict permission checks (useful for Windows setups)
+  #   volumes:
+  #     # - ./microservice-logs:/var/log/microservice:ro # Mounts the microservice logs directory (read-only)
+  #     - ./logs:/var/log/orchestrapay/logs:ro # Mount the entire logs directory (read-only)
+  #     - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml # Mounts Filebeat config file
+  #     - ./filebeat/logs:/usr/share/filebeat/dockerlogs # Mounts Filebeat logs directory
+  #   depends_on:
+  #     - logstash # Ensures Filebeat starts only after Logstash is up
+  #   networks:
+  #     - elk # Connects to the custom 'elk' network
+
+# ======================= Network =======================
+networks:
+  elk:
+    driver: bridge # Creates an isolated Docker network for communication between services
