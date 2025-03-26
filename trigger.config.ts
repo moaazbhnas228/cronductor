@@ -1,7 +1,6 @@
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { MySQL2Instrumentation } from '@opentelemetry/instrumentation-mysql2';
 import { defineConfig } from '@trigger.dev/sdk/v3';
-import { omit } from 'lodash';
 
 export default defineConfig({
   project: 'proj_yknljgobncekcfhrckkd',
@@ -39,5 +38,5 @@ export default defineConfig({
       })
     ]
   },
-  dirs: ['./src/trigger']
+  dirs: ['./src/trigger/tasks']
 });

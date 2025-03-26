@@ -20,7 +20,7 @@ jobs:
           SERVER_IP: ${{ secrets.SERVER_IP }}
         run: |
           echo "$SSH_PRIVATE_KEY" > private_key && chmod 600 private_key
-          scp -i private_key -o StrictHostKeyChecking=no -r docker-compose.yml logstash $SERVER_USER@$SERVER_IP:/home/ubuntu/moaaz/elk
+          scp -i private_key -o StrictHostKeyChecking=no -r src/elk $SERVER_USER@$SERVER_IP:/home/ubuntu/moaaz
           rm -f private_key
 
       - name: Restart ELK services
